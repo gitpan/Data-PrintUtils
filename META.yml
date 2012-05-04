@@ -18,5 +18,9 @@ no_index:
     - t
     - inc
 requires:
+  Data::Dumper: 0
+  Getopt::CommandLineExports: 0
   Test::More: 0
-version: 0.01
+  Time::HiRes: 0
+  XML::Simple: 0
+version: 0.02

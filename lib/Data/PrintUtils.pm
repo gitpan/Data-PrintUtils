@@ -1,11 +1,13 @@
 package Data::PrintUtils;
 
-use 5.006;
+use 5.9.5;
 use strict;
 use warnings;
 use feature 'say';
 use XML::Simple;
 use Data::Dumper;
+use Time::HiRes qw(gettimeofday);
+use Getopt::CommandLineExports qw(:ALL);
 
 =head1 NAME
 
@@ -13,11 +15,11 @@ Data::PrintUtils - The great new Data::PrintUtils!
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 
 =head1 SYNOPSIS
@@ -49,7 +51,7 @@ BEGIN {
     use Exporter ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 # set the version for version checking
-    $VERSION = '0.01';
+    $VERSION = '0.02';
     @ISA = qw(Exporter);
     @EXPORT_OK = qw();
     %EXPORT_TAGS = ( ALL => [ qw!&print_pid &say_pid &formatList &formatOneLineHash &formatHash
@@ -62,13 +64,12 @@ BEGIN {
 }
 
 
-use Getopt::CommandLineExports qw(:ALL);
+
 
 
 
 our $USE_PIDS = 0;
 our $USE_TIME = 0;
-use Time::HiRes qw(gettimeofday);
 
 =head2 print_pid
 
@@ -105,7 +106,21 @@ Formats a list as a single line of comma seperated values in '(' ')'
 
 sub formatList
 {
-    return "(" . join (", ",@_) . ")";
+    my $argref = undef;
+    if (ref $_[0]  eq "HASH" and
+        (defined $_[0]->{LIST_START} or
+        defined $_[0]->{LIST_END} or
+        defined $_[0]->{ELEMENT_SEPARATOR}))
+    {
+        $argref = shift;
+    }
+    my %h = (
+        LIST_START          => "(",
+        LIST_END            => ")",
+        ELEMENT_SEPARATOR   => ", ",
+    );
+    %h = (%h, ( parseArgs [$argref], 'LIST_START=s', 'LIST_END=s','ELEMENT_SEPARATOR=s',),) if defined $argref;
+    return $h{LIST_START} . join ($h{ELEMENT_SEPARATOR},@_) . $h{LIST_END};
 }
 
 
@@ -119,19 +134,24 @@ sub formatOneLineHash
 {
     my $href = shift;
     my %h = (
-        PRIMARY_KEY_ORDER   => undef,
-        ( parseArgs \@_, 'PRIMARY_KEY_ORDER=s@'),
+        PRIMARY_KEY_ORDER       => undef,
+        HASH_START              => "{",
+        HASH_END                => "}",
+        ELEMENT_SEPARATOR       => ", ", 
+        KEY_VALUE_SEPARATOR     => " => ",
+        UNDEF_VALUE             => "undef",                
+        ( parseArgs \@_, 'PRIMARY_KEY_ORDER=s@', 'HASH_START=s', 'HASH_END=s', 'ELEMENT_SEPARATOR=s', 'KEY_VALUE_SEPARATOR=s', 'UNDEF_VALUE=s'),
     );    
     my %x = %$href;
-    my $s = "{";
+    my $s = $h{HASH_START};
     my @primeKeys  =  defined $h{PRIMARY_KEY_ORDER}    ? @{$h{PRIMARY_KEY_ORDER}}   : keys %$href;    
     my @keyvals = ();
     for( @primeKeys )
     {
-        push @keyvals , "$_ => $href->{$_}" if defined     $href->{$_};
-        push @keyvals , "$_ => undef" unless defined $href->{$_};
+        push @keyvals , $_ . $h{KEY_VALUE_SEPARATOR} . $href->{$_}        if defined     $href->{$_};
+        push @keyvals , $_ . $h{KEY_VALUE_SEPARATOR} . $h{UNDEF_VALUE}    unless defined $href->{$_};
     }
-    $s = $s . join (", ",  @keyvals) . "}";
+    $s = $s . join ($h{ELEMENT_SEPARATOR},  @keyvals) . $h{HASH_END};
 }
 
 
