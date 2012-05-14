@@ -11,39 +11,42 @@ use Getopt::CommandLineExports qw(:ALL);
 
 =head1 NAME
 
-Data::PrintUtils - The great new Data::PrintUtils!
+Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.02
+Version 0.03
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 
 =head1 SYNOPSIS
 
 Provides a collection of pretty print routines
 
+=head1 PURPOSE
+
+This module is meant to provide some Data::Dumper like print routines tailored to
+DBI style tables and hashes along with some debug options
+
+
 =head1 EXPORT
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
+print_pid 
+say_pid 
+formatList 
+formatOneLineHash 
+formatHash        
+formatTable 
+pivotTable 
+tableJoin 
+$USE_PIDS 
+$USE_TIME
 
 =head1 SUBROUTINES/METHODS
 
-=head2 formatList
-
-=head2 formatOneLineHash
-
-=head2 formatHash
-
-=head2 formatTable
-
-=head2 pivotTable
-
-=head2 joinTable
 
 =cut
 package Data::PrintUtils;
@@ -51,7 +54,7 @@ BEGIN {
     use Exporter ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 # set the version for version checking
-    $VERSION = '0.02';
+    $VERSION = '0.03';
     @ISA = qw(Exporter);
     @EXPORT_OK = qw();
     %EXPORT_TAGS = ( ALL => [ qw!&print_pid &say_pid &formatList &formatOneLineHash &formatHash
@@ -62,11 +65,6 @@ BEGIN {
     @EXPORT_OK = qw(&print_pid &say_pid &formatList &formatOneLineHash &formatHash
         &formatTable &pivotTable &tableJoin $USE_PIDS $USE_TIME);
 }
-
-
-
-
-
 
 our $USE_PIDS = 0;
 our $USE_TIME = 0;
@@ -102,6 +100,14 @@ sub say_pid   { CORE::print "$$ : " if $USE_PIDS; CORE::print join(".", gettimeo
 
 Formats a list as a single line of comma seperated values in '(' ')'
 
+An optional hash may be passed as the first argument to configure the following:
+        LIST_START          => "(", # The String denoting the start of the list
+        LIST_END            => ")", # The String denoting the end of the list
+        ELEMENT_SEPARATOR   => ", ",  # The String seperating elements of the list
+
+Note that these means that the unadorned list may not start with a hash ref :(
+
+
 =cut
 
 sub formatList
@@ -128,6 +134,15 @@ sub formatList
 
 Formats a hash as a single line of => and comma separated values in '{' '}'
 
+The hash to be printed is passed as a reference in the first parameter
+The rest of the arguments are parsed as options in Getopt::CommandLineExports format:
+        PRIMARY_KEY_ORDER       => undef, # ordering for the has keys (undef means undefined perl ordering)
+        HASH_START              => "{",   # String denoting the start of the hash 
+        HASH_END                => "}",   # String denoting the end of the hash 
+        ELEMENT_SEPARATOR       => ", ",  # String seperating the key/value pairs of the hash 
+        KEY_VALUE_SEPARATOR     => " => ",# String seperating the keys and the values of the hash
+        UNDEF_VALUE             => "undef", # String to print if the  value of the hash is undefined or if the key does not exist, but does in the PRIMARY_KEY_ORDER
+        NOTEXIST_VALUE          => "notExist", # String to print if the key does not exist, but does in the PRIMARY_KEY_ORDER
 =cut
 
 sub formatOneLineHash
@@ -140,7 +155,8 @@ sub formatOneLineHash
         ELEMENT_SEPARATOR       => ", ", 
         KEY_VALUE_SEPARATOR     => " => ",
         UNDEF_VALUE             => "undef",                
-        ( parseArgs \@_, 'PRIMARY_KEY_ORDER=s@', 'HASH_START=s', 'HASH_END=s', 'ELEMENT_SEPARATOR=s', 'KEY_VALUE_SEPARATOR=s', 'UNDEF_VALUE=s'),
+        NOTEXIST_VALUE          => "notExist",
+        ( parseArgs \@_, 'PRIMARY_KEY_ORDER=s@', 'HASH_START=s', 'HASH_END=s', 'ELEMENT_SEPARATOR=s', 'KEY_VALUE_SEPARATOR=s', 'UNDEF_VALUE=s', 'NOTEXIST_VALUE=s'),
     );    
     my %x = %$href;
     my $s = $h{HASH_START};
@@ -148,8 +164,9 @@ sub formatOneLineHash
     my @keyvals = ();
     for( @primeKeys )
     {
+        push @keyvals , $_ . $h{KEY_VALUE_SEPARATOR} . $h{NOTEXIST_VALUE} unless exists  $href->{$_};
         push @keyvals , $_ . $h{KEY_VALUE_SEPARATOR} . $href->{$_}        if defined     $href->{$_};
-        push @keyvals , $_ . $h{KEY_VALUE_SEPARATOR} . $h{UNDEF_VALUE}    unless defined $href->{$_};
+        push @keyvals , $_ . $h{KEY_VALUE_SEPARATOR} . $h{UNDEF_VALUE}    if (not defined $href->{$_} and exists $href->{$_});
     }
     $s = $s . join ($h{ELEMENT_SEPARATOR},  @keyvals) . $h{HASH_END};
 }
@@ -158,8 +175,11 @@ sub formatOneLineHash
 
 =head2 formatHash
 
-=cut
+Formats a Hash with one level deep expansion
+Each key/value pair is a single line that may be justified right or left for prettiness
 
+
+=cut
 
 sub formatHash
 {
@@ -171,7 +191,10 @@ sub formatHash
             MAX_VALUE_WIDTH     => 10000,
             PRIMARY_KEY_ORDER   => undef,
             SECONDARY_KEY_ORDER => undef,
-        ( parseArgs \@_, 'KEY_JUSTIFCATION=s', 'VALUE_JUSTIFICATION=s', 'MAX_KEY_WIDTH=i', 'MAX_VALUE_WIDTH=i', 'PRIMARY_KEY_ORDER=s@', 'SECONDARY_KEY_ORDER=s@'),
+			UNDEF_VALUE         => "undef\n",                
+			NOTEXIST_VALUE      => "notExist\n",
+			KEY_VALUE_SEPARATOR => " => ",
+        ( parseArgs \@_, 'KEY_JUSTIFCATION=s', 'VALUE_JUSTIFICATION=s', 'MAX_KEY_WIDTH=i', 'MAX_VALUE_WIDTH=i', 'PRIMARY_KEY_ORDER=s@', 'SECONDARY_KEY_ORDER=s@', 'KEY_VALUE_SEPARATOR=s', 'UNDEF_VALUE=s', 'NOTEXIST_VALUE=s'),
     );
     my $maxKeyLen = 0;
     my $maxValLen = 0;
@@ -180,9 +203,8 @@ sub formatHash
     $maxKeyLen = ($maxKeyLen > $h{MAX_KEY_WIDTH})   ? $h{MAX_KEY_WIDTH}   : $maxKeyLen;
     $maxValLen = ($maxValLen > $h{MAX_VALUE_WIDTH}) ? $h{MAX_VALUE_WIDTH} : $maxValLen;
     my $s ="";
-    my $keyFormat   = $h{KEY_JUSTIFCATION}      eq 'Right' ? "%*.*s => " : "%-*.*s => ";
+    my $keyFormat   = $h{KEY_JUSTIFCATION}      eq 'Right' ? "%*.*s$h{KEY_VALUE_SEPARATOR}" : "%-*.*s$h{KEY_VALUE_SEPARATOR}";
     my $valueFormat = $h{VALUE_JUSTIFICATION}   eq 'Right' ? "%*.*s\n"   : "%-*.*s\n";
-	my $undefinedFormat = "undef\n";
     my @primeKeys  =  defined $h{PRIMARY_KEY_ORDER}    ? @{$h{PRIMARY_KEY_ORDER}}   : keys %$hash_ref;
 #    my @secondKeys =  defined $h{SECONDARY_KEY_ORDER}  ? @{$h{SECONDARY_KEY_ORDER}} : undef;
     
@@ -193,7 +215,8 @@ sub formatHash
         $s = $s . sprintf($valueFormat, $maxValLen, $h{MAX_VALUE_WIDTH}, formatOneLineHash(\%{$hash_ref->{$_}}, {PRIMARY_KEY_ORDER => $h{SECONDARY_KEY_ORDER} } )) if  (ref $hash_ref->{$_} eq "HASH" and defined $h{SECONDARY_KEY_ORDER});
         $s = $s . sprintf($valueFormat, $maxValLen, $h{MAX_VALUE_WIDTH}, formatOneLineHash(\%{$hash_ref->{$_}}))  if  (ref $hash_ref->{$_} eq "HASH" and not defined $h{SECONDARY_KEY_ORDER});
         $s = $s . sprintf($valueFormat, $maxValLen, $h{MAX_VALUE_WIDTH}, $$hash_ref{$_} )                         if  (ref $hash_ref->{$_} eq "" and defined $hash_ref->{$_} );
-        $s = $s . sprintf($undefinedFormat)                         											  if  (ref $hash_ref->{$_} eq "" and not defined $hash_ref->{$_} );
+        $s = $s . sprintf($h{UNDEF_VALUE})                         											      if  (ref $hash_ref->{$_} eq "" and not defined $hash_ref->{$_} and exists $hash_ref->{$_} );
+        $s = $s . sprintf($h{NOTEXIST_VALUE})                         										      if  (ref $hash_ref->{$_} eq "" and not exists $hash_ref->{$_});
     }
     return $s;
 }
@@ -331,9 +354,10 @@ sub pivotTable
 
 =head2 joinTable
 
-Formats a table (given as an array of hash references (as returned from DBI) ) into
-a somewhat pleasant display.  With the Columns argument, you can chose to only
-print a subset of the columns (and you can define the column ordering).
+creates a new table that is either the simple equijoin of the left and right table,
+or, if LEFT_JOIN_KEY_UNIQUE is set, then Joins the Right Table to the Left Table (all
+rows of the left table are included
+
 
 =cut
 

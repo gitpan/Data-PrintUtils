@@ -1,5 +1,5 @@
 {
-   "abstract" : "The great new Data::PrintUtils!",
+   "abstract" : "A Collection of Pretty Print routines like Data::Dumper",
    "author" : [
       "Robert Haxton <robert.haxton@gmail.com>"
    ],
@@ -41,5 +41,5 @@
       }
    },
    "release_status" : "stable",
-   "version" : "0.02"
+   "version" : "0.03"
 }
