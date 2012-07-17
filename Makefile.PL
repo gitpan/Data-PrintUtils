@@ -17,6 +17,7 @@ WriteMakefile(
         'Data::Dumper' => 0,
         'XML::Simple' => 0,
         'Time::HiRes' => 0,
+        'HTML::Tabulate' => 0,        
         'Getopt::CommandLineExports' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },

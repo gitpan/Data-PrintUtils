@@ -8,6 +8,7 @@ use XML::Simple;
 use Data::Dumper;
 use Time::HiRes qw(gettimeofday);
 use Getopt::CommandLineExports qw(:ALL);
+use HTML::Tabulate qw(render);
 
 =head1 NAME
 
@@ -15,11 +16,11 @@ Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.03
+Version 0.04
 
 =cut
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 
 =head1 SYNOPSIS
@@ -54,7 +55,7 @@ BEGIN {
     use Exporter ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 # set the version for version checking
-    $VERSION = '0.03';
+    $VERSION = '0.04';
     @ISA = qw(Exporter);
     @EXPORT_OK = qw();
     %EXPORT_TAGS = ( ALL => [ qw!&print_pid &say_pid &formatList &formatOneLineHash &formatHash
@@ -101,9 +102,10 @@ sub say_pid   { CORE::print "$$ : " if $USE_PIDS; CORE::print join(".", gettimeo
 Formats a list as a single line of comma seperated values in '(' ')'
 
 An optional hash may be passed as the first argument to configure the following:
-        LIST_START          => "(", # The String denoting the start of the list
-        LIST_END            => ")", # The String denoting the end of the list
-        ELEMENT_SEPARATOR   => ", ",  # The String seperating elements of the list
+
+	LIST_START          => "(", # The String denoting the start of the list
+	LIST_END            => ")", # The String denoting the end of the list
+	ELEMENT_SEPARATOR   => ", ",  # The String seperating elements of the list
 
 Note that these means that the unadorned list may not start with a hash ref :(
 
@@ -136,13 +138,15 @@ Formats a hash as a single line of => and comma separated values in '{' '}'
 
 The hash to be printed is passed as a reference in the first parameter
 The rest of the arguments are parsed as options in Getopt::CommandLineExports format:
-        PRIMARY_KEY_ORDER       => undef, # ordering for the has keys (undef means undefined perl ordering)
-        HASH_START              => "{",   # String denoting the start of the hash 
-        HASH_END                => "}",   # String denoting the end of the hash 
-        ELEMENT_SEPARATOR       => ", ",  # String seperating the key/value pairs of the hash 
-        KEY_VALUE_SEPARATOR     => " => ",# String seperating the keys and the values of the hash
-        UNDEF_VALUE             => "undef", # String to print if the  value of the hash is undefined or if the key does not exist, but does in the PRIMARY_KEY_ORDER
-        NOTEXIST_VALUE          => "notExist", # String to print if the key does not exist, but does in the PRIMARY_KEY_ORDER
+
+	PRIMARY_KEY_ORDER       => undef, # ordering for the has keys (undef means undefined perl ordering)
+	HASH_START              => "{",   # String denoting the start of the hash 
+	HASH_END                => "}",   # String denoting the end of the hash 
+	ELEMENT_SEPARATOR       => ", ",  # String seperating the key/value pairs of the hash 
+	KEY_VALUE_SEPARATOR     => " => ",# String seperating the keys and the values of the hash
+	UNDEF_VALUE             => "undef", # String to print if the  value of the hash is undefined or if the key does not exist, but does in the PRIMARY_KEY_ORDER
+	NOTEXIST_VALUE          => "notExist", # String to print if the key does not exist, but does in the PRIMARY_KEY_ORDER
+
 =cut
 
 sub formatOneLineHash
@@ -178,6 +182,15 @@ sub formatOneLineHash
 Formats a Hash with one level deep expansion
 Each key/value pair is a single line that may be justified right or left for prettiness
 
+	KEY_JUSTIFCATION    => 'Right', # justifcation (Right or Left) for the key column
+	VALUE_JUSTIFICATION => 'Left', # justifcation (Right or Left)  for the Value column
+	MAX_KEY_WIDTH       => 10000, # maximum column width for the key column
+	MAX_VALUE_WIDTH     => 10000, # maximum column width for the Value column
+	PRIMARY_KEY_ORDER   => undef, # ordering for the hash keys (undef means undefined perl ordering)
+	SECONDARY_KEY_ORDER => undef, # ordering for the hash keys of any sub keys (undef means undefined perl ordering)
+	KEY_VALUE_SEPARATOR     => " => ",# String seperating the keys and the values of the hash
+	UNDEF_VALUE             => "undef", # String to print if the  value of the hash is undefined or if the key does not exist, but does in the PRIMARY_KEY_ORDER
+	NOTEXIST_VALUE          => "notExist", # String to print if the key does not exist, but does in the PRIMARY_KEY_ORDER
 
 =cut
 
@@ -231,12 +244,15 @@ print a subset of the columns (and you can define the column ordering).
 =over
 
 =item ROWS
+
 This is a reference to the table (which should be an array of hashes refs)
 
 =item COLUMNS
+
 This is a list of columns (in order) to be displayed
 
 =item UNDEF_VALUE
+
 This is a string value to be displayed whenever an item is "undefined"
 
 =back
@@ -249,6 +265,7 @@ sub formatTable
 #        ROWS    => undef,
 #        COLUMNS => undef,
         XML_REPORT              => undef,
+        HTML_TABLE              => undef,        
         UNDEF_VALUE             => '',
         START_FIELD_DELIMITER   => '',
         END_FIELD_DELIMITER     => ' ',
@@ -257,6 +274,26 @@ sub formatTable
     );
     my $array_of_hash_ref = $h{ROWS};
     my $listOfColumns = $h{COLUMNS};
+    if (defined $h{HTML_TABLE})
+    {
+		my @List =(defined $listOfColumns ? @$listOfColumns : keys  %{$array_of_hash_ref->[0]});
+        my $s ="";
+        my @trimedArrayOfHashRefs = ();
+		foreach my $hash_ref (@$array_of_hash_ref)
+		{
+	        my %x = ();
+			$x{$_} = defined $hash_ref->{$_} ? $hash_ref->{$_} : $h{UNDEF_VALUE} foreach (@List);
+			push @trimedArrayOfHashRefs, \%x;
+		}
+        $table_defn = { 
+            table => { border => 0, cellpadding => 0, cellspacing => 3 },
+            th => { class => 'foobar' },
+            null => '&nbsp;',
+            labels => 1,
+            stripe => '#cccccc',
+        };
+		return render(\@trimedArrayOfHashRefs, $table_defn);
+    }
   	if (defined $h{XML_REPORT})
 	{
 		my @List =(defined $listOfColumns ? @$listOfColumns : keys  %{$array_of_hash_ref->[0]});
@@ -307,24 +344,26 @@ pivots an attribute-value table (given as an array of hash references (as return
 into a new table with a row for each unique PIVOT_KEY and a column for each attribute
 
 example:
-my @table = 
-(
-{COL1 => 1, Name => 'PID',  VALUE => '1a', XTRA1 => '111'},
-{COL1 => 1, Name => 'SID',  VALUE => 's1', XTRA1 => '112'},
-{COL1 => 1, Name => 'XV1',  VALUE => 'YY', XTRA1 => '116'},
-{COL1 => 1, Name => 'XV2',  VALUE => 'XX', XTRA1 => '117'},
 
-{COL1 => 2, Name => 'PID',  VALUE => '2a', XTRA1 => '221'},
-{COL1 => 2, Name => 'SID',  VALUE => 's2', XTRA1 => '222'},
-{COL1 => 2, Name => 'XV2',  VALUE => 'XX2', XTRA1 => '224'},
-);
-my @newTable1 = pivotTable { ROWS => \@table, PIVOT_KEY => 'COL1', VALUE_HEADER_KEY=> 'Name', VALUE_KEY => 'VALUE'};
-say formatTable { ROWS => \@newTable1, UNDEF_VALUE => 'NULL'} if @newTable1;
+	my @table = 
+	(
+	{COL1 => 1, Name => 'PID',  VALUE => '1a', XTRA1 => '111'},
+	{COL1 => 1, Name => 'SID',  VALUE => 's1', XTRA1 => '112'},
+	{COL1 => 1, Name => 'XV1',  VALUE => 'YY', XTRA1 => '116'},
+	{COL1 => 1, Name => 'XV2',  VALUE => 'XX', XTRA1 => '117'},
+
+	{COL1 => 2, Name => 'PID',  VALUE => '2a', XTRA1 => '221'},
+	{COL1 => 2, Name => 'SID',  VALUE => 's2', XTRA1 => '222'},
+	{COL1 => 2, Name => 'XV2',  VALUE => 'XX2', XTRA1 => '224'},
+	);
+	my @newTable1 = pivotTable { ROWS => \@table, PIVOT_KEY => 'COL1', VALUE_HEADER_KEY=> 'Name', VALUE_KEY => 'VALUE'};
+	say formatTable { ROWS => \@newTable1, UNDEF_VALUE => 'NULL'} if @newTable1;
 
 results in 
-COL1 PID SID  XV1 XV2
-   1  1a  s1   YY  XX
-   2  2a  s2 NULL XX2
+
+	COL1 PID SID  XV1 XV2
+	1  1a  s1   YY  XX
+	2  2a  s2 NULL XX2
 
 =cut
 
@@ -356,7 +395,7 @@ sub pivotTable
 
 creates a new table that is either the simple equijoin of the left and right table,
 or, if LEFT_JOIN_KEY_UNIQUE is set, then Joins the Right Table to the Left Table (all
-rows of the left table are included
+rows of the left table are included)
 
 
 =cut
@@ -440,6 +479,10 @@ L<http://cpanratings.perl.org/d/Data-PrintUtils>
 =item * Search CPAN
 
 L<http://search.cpan.org/dist/Data-PrintUtils/>
+
+=item * Code Repository
+
+L<https://code.google.com/p/data-printutils/>
 
 =back
 

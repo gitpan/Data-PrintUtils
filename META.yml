@@ -20,7 +20,8 @@ no_index:
 requires:
   Data::Dumper: 0
   Getopt::CommandLineExports: 0
+  HTML::Tabulate: 0
   Test::More: 0
   Time::HiRes: 0
   XML::Simple: 0
-version: 0.03
+version: 0.04
