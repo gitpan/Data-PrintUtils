@@ -16,11 +16,11 @@ Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.05
+Version 0.06
 
 =cut
 
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 
 
 =head1 SYNOPSIS
@@ -55,7 +55,7 @@ BEGIN {
     use Exporter ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 # set the version for version checking
-    $VERSION = '0.05';
+    $VERSION = '0.06';
     @ISA = qw(Exporter);
     @EXPORT_OK = qw();
     %EXPORT_TAGS = ( ALL => [ qw!&print_pid &say_pid &formatList &formatOneLineHash &formatHash
@@ -291,6 +291,7 @@ sub formatTable
             null => '&nbsp;',
             labels => 1,
             stripe => '#cccccc',
+            fields => \@List,
         };
 		return render(\@trimedArrayOfHashRefs, $table_defn);
     }
