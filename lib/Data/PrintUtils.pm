@@ -16,11 +16,11 @@ Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.06
+Version 0.07
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 
 =head1 SYNOPSIS
@@ -42,7 +42,7 @@ formatOneLineHash
 formatHash        
 formatTable 
 pivotTable 
-tableJoin 
+joinTable 
 $USE_PIDS 
 $USE_TIME
 
@@ -55,16 +55,16 @@ BEGIN {
     use Exporter ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 # set the version for version checking
-    $VERSION = '0.06';
+    $VERSION = '0.07';
     @ISA = qw(Exporter);
     @EXPORT_OK = qw();
     %EXPORT_TAGS = ( ALL => [ qw!&print_pid &say_pid &formatList &formatOneLineHash &formatHash
-        &formatTable &pivotTable &tableJoin $USE_PIDS $USE_TIME! ], ); # eg: TAG => [ qw!name1 name2! ],
+        &formatTable &pivotTable &joinTable $USE_PIDS $USE_TIME! ], ); # eg: TAG => [ qw!name1 name2! ],
 
 #your exported package globals go here,
 #as well as any optionally exported functions
     @EXPORT_OK = qw(&print_pid &say_pid &formatList &formatOneLineHash &formatHash
-        &formatTable &pivotTable &tableJoin $USE_PIDS $USE_TIME);
+        &formatTable &pivotTable &joinTable $USE_PIDS $USE_TIME);
 }
 
 our $USE_PIDS = 0;

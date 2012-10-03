@@ -24,4 +24,4 @@ requires:
   Test::More: 0
   Time::HiRes: 0
   XML::Simple: 0
-version: 0.06
+version: 0.07
