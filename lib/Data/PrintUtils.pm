@@ -16,11 +16,11 @@ Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.07
+Version 0.08
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 
 
 =head1 SYNOPSIS
@@ -54,8 +54,7 @@ package Data::PrintUtils;
 BEGIN {
     use Exporter ();
     our ($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
-# set the version for version checking
-    $VERSION = '0.07';
+
     @ISA = qw(Exporter);
     @EXPORT_OK = qw();
     %EXPORT_TAGS = ( ALL => [ qw!&print_pid &say_pid &formatList &formatOneLineHash &formatHash
@@ -365,6 +364,29 @@ results in
 	COL1 PID SID  XV1 XV2
 	1  1a  s1   YY  XX
 	2  2a  s2 NULL XX2
+    
+example:
+
+	my @table = 
+	(
+	{COL1 => 1, Name => 'PID',  VALUE => '1a', XTRA1 => '111'},
+	{COL1 => 1, Name => 'SID',  VALUE => 's1', XTRA1 => '112'},
+	{COL1 => 1, Name => 'XV1',  VALUE => 'YY', XTRA1 => '116'},
+	{COL1 => 1, Name => 'XV1',  VALUE => 'ZZ', XTRA1 => '116'},
+	{COL1 => 1, Name => 'XV2',  VALUE => 'XX', XTRA1 => '117'},
+
+	{COL1 => 2, Name => 'PID',  VALUE => '2a', XTRA1 => '221'},
+	{COL1 => 2, Name => 'SID',  VALUE => 's2', XTRA1 => '222'},
+	{COL1 => 2, Name => 'XV2',  VALUE => 'XX2', XTRA1 => '224'},
+	);
+	my @newTable1 = pivotTable { ROWS => \@table, PIVOT_KEY => 'COL1', VALUE_HEADER_KEY=> 'Name', VALUE_KEY => 'VALUE', CONCAT_DUPLICATE => 1};
+	say formatTable { ROWS => \@newTable1, UNDEF_VALUE => 'NULL'} if @newTable1;
+
+results in 
+
+	COL1 PID SID  XV1      XV2
+	1  1a    s1   YY | ZZ  XX
+	2  2a    s2   NULL     XX2
 
 =cut
 
@@ -375,7 +397,9 @@ sub pivotTable
             PIVOT_KEY           => undef,
             VALUE_HEADER_KEY    => undef,
             VALUE_KEY           => undef,
-        ( parseArgs \@_, 'ROWS=s@', 'PIVOT_KEY=s', 'VALUE_HEADER_KEY=s', 'VALUE_KEY=s'),
+            CONCAT_DUPLICATE    => 0,
+            SEPARATOR           => " | ",
+        ( parseArgs \@_, 'ROWS=s@', 'PIVOT_KEY=s', 'VALUE_HEADER_KEY=s', 'VALUE_KEY=s', 'CONCAT_DUPLICATE=i', 'SEPARATOR=s'),
     );
     my $table_ref = $h{ROWS}; 
     my %newKeys;
@@ -385,8 +409,21 @@ sub pivotTable
         my $newKey      = $_->{ $h{PIVOT_KEY} };
         my $newColKey   = $_->{ $h{VALUE_HEADER_KEY} };
         my $newColValue = $_->{ $h{VALUE_KEY} };
-        $newKeys{ $_->{ $h{PIVOT_KEY} } } = {%{$newKeys{ $_->{ $h{PIVOT_KEY} } }}, $newColKey => $newColValue}  if      defined $newKeys{ $_->{ $h{PIVOT_KEY} } };
-        $newKeys{ $_->{ $h{PIVOT_KEY} } } = {$newColKey => $newColValue}                                        unless  defined $newKeys{ $_->{ $h{PIVOT_KEY} } };
+        if (defined $newKeys{ $_->{ $h{PIVOT_KEY} } })
+        {
+            if (defined $newKeys{ $_->{ $h{PIVOT_KEY} } }->{$newColKey} and $h{CONCAT_DUPLICATE})
+            {
+                $newKeys{ $_->{ $h{PIVOT_KEY} } } = {%{$newKeys{ $_->{ $h{PIVOT_KEY} } }}, $newColKey => "$newKeys{ $_->{ $h{PIVOT_KEY} } }->{$newColKey}" . $h{SEPARATOR} . "$newColValue"};
+            }
+            else
+            {            
+                $newKeys{ $_->{ $h{PIVOT_KEY} } } = {%{$newKeys{ $_->{ $h{PIVOT_KEY} } }}, $newColKey => $newColValue};
+            }
+        }
+        else
+        {
+            $newKeys{ $_->{ $h{PIVOT_KEY} } } = {$newColKey => $newColValue}
+        }
     }
     push @newTable, {%{$newKeys{ $_ }}, $h{PIVOT_KEY} => $_} foreach (keys %newKeys) ;
     return @newTable;
