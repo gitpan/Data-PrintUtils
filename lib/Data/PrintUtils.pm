@@ -9,18 +9,19 @@ use Data::Dumper;
 use Time::HiRes qw(gettimeofday);
 use Getopt::CommandLineExports qw(:ALL);
 use HTML::Tabulate qw(render);
-
+use List::Util qw(first max maxstr min minstr reduce shuffle sum);
+    
 =head1 NAME
 
 Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.08
+Version 0.09
 
 =cut
 
-our $VERSION = '0.08';
+our $VERSION = '0.09';
 
 
 =head1 SYNOPSIS
@@ -398,32 +399,71 @@ sub pivotTable
             VALUE_HEADER_KEY    => undef,
             VALUE_KEY           => undef,
             CONCAT_DUPLICATE    => 0,
+            INCLUDE_IDENTICAL   => 0,
             SEPARATOR           => " | ",
-        ( parseArgs \@_, 'ROWS=s@', 'PIVOT_KEY=s', 'VALUE_HEADER_KEY=s', 'VALUE_KEY=s', 'CONCAT_DUPLICATE=i', 'SEPARATOR=s'),
+        ( parseArgs \@_, 'ROWS=s@', 'PIVOT_KEY=s', 'VALUE_HEADER_KEY=s@', 'VALUE_KEY=s@', 'CONCAT_DUPLICATE=i', 'SEPARATOR=s'),
     );
+    print "Hello\n";
+    
     my $table_ref = $h{ROWS}; 
     my %newKeys;
     my @newTable = ();
-    foreach (@{$table_ref} )
+    $h{VALUE_HEADER_KEY} = [$h{VALUE_HEADER_KEY}] unless ref( $h{VALUE_HEADER_KEY});
+    $h{VALUE_KEY} = [$h{VALUE_KEY}]  unless ref( $h{VALUE_KEY});
+
+    foreach my $row (@{$table_ref} )
     {
-        my $newKey      = $_->{ $h{PIVOT_KEY} };
-        my $newColKey   = $_->{ $h{VALUE_HEADER_KEY} };
-        my $newColValue = $_->{ $h{VALUE_KEY} };
-        if (defined $newKeys{ $_->{ $h{PIVOT_KEY} } })
+        my @ValKeyCopy = @{$h{VALUE_KEY}};
+        print "Val Keys " . join (", ", @ValKeyCopy) . "\n";
+        foreach my $valHeaderKey (@{$h{VALUE_HEADER_KEY}})
         {
-            if (defined $newKeys{ $_->{ $h{PIVOT_KEY} } }->{$newColKey} and $h{CONCAT_DUPLICATE})
+
+            my $newKey      = $row->{ $h{PIVOT_KEY} };
+            my $newColKey   = $row->{ $valHeaderKey };
+            my $valKey = shift @ValKeyCopy;
+            print "$valHeaderKey $valKey => $newKey , $newColKey \n";
+            next unless defined $valKey;
+            my $newColValue = $row->{ $valKey };
+            if (defined $newKeys{ $newKey })
             {
-                $newKeys{ $_->{ $h{PIVOT_KEY} } } = {%{$newKeys{ $_->{ $h{PIVOT_KEY} } }}, $newColKey => "$newKeys{ $_->{ $h{PIVOT_KEY} } }->{$newColKey}" . $h{SEPARATOR} . "$newColValue"};
+                if (defined $newKeys{ $newKey }->{$newColKey} and $h{CONCAT_DUPLICATE})
+                {
+                    $newKeys{ $newKey } = {%{$newKeys{ $newKey }}, $newColKey => "$newKeys{ $newKey }->{$newColKey}" . $h{SEPARATOR} . "$newColValue"};
+                }
+                else
+                {            
+                    $newKeys{ $newKey } = {%{$newKeys{ $newKey }}, $newColKey => $newColValue};
+                }
             }
             else
-            {            
-                $newKeys{ $_->{ $h{PIVOT_KEY} } } = {%{$newKeys{ $_->{ $h{PIVOT_KEY} } }}, $newColKey => $newColValue};
+            {
+                $newKeys{ $newKey } = {$newColKey => $newColValue}
             }
         }
-        else
+        if ($h{INCLUDE_IDENTICAL})
         {
-            $newKeys{ $_->{ $h{PIVOT_KEY} } } = {$newColKey => $newColValue}
-        }
+            my $newKey = $row->{ $h{PIVOT_KEY} };
+            my $newRow = $newKeys{ $newKey };
+            foreach my $key (keys %{$row})
+            {
+                unless (defined first {$_ eq $key} (@{$h{VALUE_HEADER_KEY}}, @{$h{VALUE_KEY}}))
+                {
+                    if (exists $newRow->{$key})
+                    {
+                        if (defined $newRow->{$key})
+                        {
+                            undef $newRow->{$key} if $newRow->{$key} ne $row->{$key};
+                        }
+                    }
+                    else
+                    {
+                        $newRow->{$key} = $row->{$key};
+                    }
+                }
+            }
+            
+        }    
+            
     }
     push @newTable, {%{$newKeys{ $_ }}, $h{PIVOT_KEY} => $_} foreach (keys %newKeys) ;
     return @newTable;
