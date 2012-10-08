@@ -17,11 +17,11 @@ Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.09
+Version 0.10
 
 =cut
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 
 =head1 SYNOPSIS
@@ -403,8 +403,6 @@ sub pivotTable
             SEPARATOR           => " | ",
         ( parseArgs \@_, 'ROWS=s@', 'PIVOT_KEY=s', 'VALUE_HEADER_KEY=s@', 'VALUE_KEY=s@', 'CONCAT_DUPLICATE=i', 'SEPARATOR=s'),
     );
-    print "Hello\n";
-    
     my $table_ref = $h{ROWS}; 
     my %newKeys;
     my @newTable = ();
@@ -414,14 +412,12 @@ sub pivotTable
     foreach my $row (@{$table_ref} )
     {
         my @ValKeyCopy = @{$h{VALUE_KEY}};
-        print "Val Keys " . join (", ", @ValKeyCopy) . "\n";
         foreach my $valHeaderKey (@{$h{VALUE_HEADER_KEY}})
         {
 
             my $newKey      = $row->{ $h{PIVOT_KEY} };
             my $newColKey   = $row->{ $valHeaderKey };
             my $valKey = shift @ValKeyCopy;
-            print "$valHeaderKey $valKey => $newKey , $newColKey \n";
             next unless defined $valKey;
             my $newColValue = $row->{ $valKey };
             if (defined $newKeys{ $newKey })

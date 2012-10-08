@@ -15,7 +15,7 @@ name: Data-PrintUtils
 provides:
   Data::PrintUtils:
     file: lib/Data/PrintUtils.pm
-    version: 0.09
+    version: 0.10
 requires:
   Data::Dumper: 0
   Getopt::CommandLineExports: 0
@@ -23,4 +23,4 @@ requires:
   Test::More: 0
   Time::HiRes: 0
   XML::Simple: 0
-version: 0.09
+version: 0.10

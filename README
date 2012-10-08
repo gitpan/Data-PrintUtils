@@ -3,7 +3,7 @@ NAME
     Data::Dumper
 
 VERSION
-    Version 0.09
+    Version 0.10
 
 SYNOPSIS
     Provides a collection of pretty print routines

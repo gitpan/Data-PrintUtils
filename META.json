@@ -33,9 +33,9 @@
    "provides" : {
       "Data::PrintUtils" : {
          "file" : "lib/Data/PrintUtils.pm",
-         "version" : "0.09"
+         "version" : "0.10"
       }
    },
    "release_status" : "stable",
-   "version" : "0.09"
+   "version" : "0.10"
 }
