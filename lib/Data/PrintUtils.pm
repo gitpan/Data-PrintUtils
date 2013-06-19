@@ -17,11 +17,11 @@ Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.10
+Version 0.11
 
 =cut
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 
 =head1 SYNOPSIS
@@ -279,17 +279,26 @@ sub formatTable
 		my @List =(defined $listOfColumns ? @$listOfColumns : keys  %{$array_of_hash_ref->[0]});
         my $s ="";
         my @trimedArrayOfHashRefs = ();
+
+        
 		foreach my $hash_ref (@$array_of_hash_ref)
 		{
 	        my %x = ();
 			$x{$_} = defined $hash_ref->{$_} ? $hash_ref->{$_} : $h{UNDEF_VALUE} foreach (@List);
 			push @trimedArrayOfHashRefs, \%x;
 		}
+        my %labels;
+        my $hr = $trimedArrayOfHashRefs[0];
+        foreach my $v (keys $hr)
+        {
+            $labels{$v} = $v;
+        }
+        
         my $table_defn = { 
             table => { border => 0, cellpadding => 0, cellspacing => 3 },
             th => { class => 'foobar' },
             null => '&nbsp;',
-            labels => 1,
+            labels => \%labels,
             stripe => '#cccccc',
             fields => \@List,
         };
