@@ -17,11 +17,11 @@ Data::PrintUtils - A Collection of Pretty Print routines like Data::Dumper
 
 =head1 VERSION
 
-Version 0.11
+Version 0.12
 
 =cut
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 
 =head1 SYNOPSIS
@@ -289,7 +289,7 @@ sub formatTable
 		}
         my %labels;
         my $hr = $trimedArrayOfHashRefs[0];
-        foreach my $v (keys $hr)
+        foreach my $v (keys %{$hr})
         {
             $labels{$v} = $v;
         }

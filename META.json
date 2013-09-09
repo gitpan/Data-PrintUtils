@@ -1,10 +1,10 @@
 {
-   "abstract" : "A Collection of Pretty Print routines like Data::Dumper",
+   "abstract" : "unknown",
    "author" : [
-      "q{Robert Haxton <robert.haxton@gmail.com>}"
+      "unknown"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.4003, CPAN::Meta::Converter version 2.120921",
+   "generated_by" : "ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.130880",
    "license" : [
       "unknown"
    ],
@@ -13,10 +13,21 @@
       "version" : "2"
    },
    "name" : "Data-PrintUtils",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "inc"
+      ]
+   },
    "prereqs" : {
+      "build" : {
+         "requires" : {
+            "ExtUtils::MakeMaker" : "0"
+         }
+      },
       "configure" : {
          "requires" : {
-            "Module::Build" : "0.40"
+            "ExtUtils::MakeMaker" : "0"
          }
       },
       "runtime" : {
@@ -25,17 +36,12 @@
             "Getopt::CommandLineExports" : "0",
             "HTML::Tabulate" : "0",
             "Test::More" : "0",
+            "Test::Output" : "0",
             "Time::HiRes" : "0",
             "XML::Simple" : "0"
          }
       }
    },
-   "provides" : {
-      "Data::PrintUtils" : {
-         "file" : "lib/Data/PrintUtils.pm",
-         "version" : "0.11"
-      }
-   },
    "release_status" : "stable",
-   "version" : "0.11"
+   "version" : "0.12"
 }

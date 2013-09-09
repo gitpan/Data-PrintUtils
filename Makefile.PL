@@ -9,6 +9,7 @@ WriteMakefile
                    'Getopt::CommandLineExports' => 0,
                    'HTML::Tabulate' => 0,
                    'Test::More' => 0,
+                   'Test::Output' => 0,
                    'Time::HiRes' => 0,
                    'XML::Simple' => 0
                  },
